@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local LLM Hosting 11 — Deploying on NVIDIA GPUs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-card: #0d1117;
+            --bg-code: #161b22;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent: #76B900;
+            --accent-dim: #76B90044;
+            --accent-glow: #76B90033;
+            --border: #21262d;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --font-body: 'Inter', sans-serif;
+            --max-width: 900px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 17px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ── Header ── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .hero > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .series-label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 .accent {
+            color: var(--accent);
+        }
+
+        .hero .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        /* ── Tag Pills ── */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+            white-space: nowrap;
+        }
+
+        /* ── Pipeline Flow Bar ── */
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+            max-width: var(--max-width);
+        }
+
+        .pipeline-step {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.3rem 0.7rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .pipeline-arrow {
+            color: var(--accent);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        /* ── Slides ── */
+        .slide {
+            min-height: 100vh;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide-number {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--accent-dim);
+            position: absolute;
+            top: 2rem;
+            right: 1.5rem;
+            line-height: 1;
+            user-select: none;
+        }
+
+        .slide h2 {
+            font-family: var(--font-display);
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            line-height: 1.25;
+        }
+
+        .slide h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .slide p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .slide p strong {
+            color: var(--text-primary);
+        }
+
+        .slide ul, .slide ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .slide li {
+            margin-bottom: 0.4rem;
+        }
+
+        .slide li strong {
+            color: var(--text-primary);
+        }
+
+        /* ── Code Blocks ── */
+        .code-block {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1.25rem 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            background: rgba(118, 185, 0, 0.08);
+            padding: 0.4rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #c9d1d9;
+        }
+
+        /* Syntax highlighting (manual) */
+        .kw { color: #ff7b72; }
+        .fn { color: #d2a8ff; }
+        .str { color: #a5d6ff; }
+        .cm { color: #8b949e; font-style: italic; }
+        .num { color: #79c0ff; }
+        .type { color: #ffa657; }
+        .dir { color: #ff7b72; }
+        .mac { color: #ffa657; }
+
+        /* ── Tables ── */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--bg-code);
+            color: var(--accent);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-display);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) td {
+            background: rgba(13, 17, 23, 0.5);
+        }
+
+        /* ── Diagrams ── */
+        .diagram-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-box {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .diagram-box.accent {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(118, 185, 0, 0.08);
+        }
+
+        .diagram-box.dim {
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+
+        .diagram-arrow {
+            color: var(--accent);
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        /* Vertical flow diagrams */
+        .diagram-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-vertical .diagram-arrow {
+            font-size: 1.1rem;
+        }
+
+        /* Nested hierarchy diagram */
+        .hierarchy {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .hierarchy-level {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .hierarchy-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .hierarchy-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .hierarchy-item {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .hierarchy-item.accent {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(118, 185, 0, 0.08);
+        }
+
+        /* Grid diagram */
+        .diagram-grid {
+            display: grid;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-grid.cols-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .diagram-grid.cols-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .diagram-panel {
+            padding: 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .diagram-panel.accent-border {
+            border-left: 3px solid var(--accent);
+        }
+
+        .diagram-panel h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .diagram-panel p, .diagram-panel ul {
+            font-size: 0.85rem;
+        }
+
+        /* ── Callout Boxes ── */
+        .callout {
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+        }
+
+        .callout p {
+            margin-bottom: 0;
+        }
+
+        .callout .callout-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.3rem;
+        }
+
+        /* ── Tier Visual ── */
+        .tier-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .tier-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .tier-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 90px;
+            text-align: right;
+        }
+
+        .tier-fill {
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding: 0 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            white-space: nowrap;
+            transition: width 0.6s ease;
+        }
+
+        .tier-cost {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            min-width: 70px;
+        }
+
+        /* ── Contents list ── */
+        .contents-list {
+            list-style: none;
+            padding-left: 0;
+            counter-reset: contents;
+        }
+
+        .contents-list li {
+            counter-increment: contents;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .contents-list li:last-child {
+            border-bottom: none;
+        }
+
+        .contents-list li::before {
+            content: counter(contents, decimal-leading-zero);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            min-width: 2rem;
+        }
+
+        .contents-list a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .contents-list a:hover {
+            color: var(--accent);
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .slide {
+                padding: 3rem 1rem;
+                min-height: auto;
+            }
+
+            .slide-number {
+                font-size: 3rem;
+                top: 1.5rem;
+                right: 1rem;
+            }
+
+            .slide h2 {
+                font-size: 1.5rem;
+            }
+
+            .diagram-grid.cols-2,
+            .diagram-grid.cols-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline {
+                gap: 0.15rem;
+            }
+
+            .pipeline-step {
+                font-size: 0.6rem;
+                padding: 0.2rem 0.4rem;
+            }
+
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+
+            table {
+                font-size: 0.78rem;
+            }
+
+            .tier-label {
+                min-width: 60px;
+                font-size: 0.65rem;
+            }
+
+            .tier-fill {
+                font-size: 0.6rem;
+                height: 26px;
+            }
+        }
+
+        /* ── Interactive controls (added for Local LLM series) ── */
+        .control-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin: 1.25rem 0;
+        }
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .control-row label {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 180px;
+        }
+        .control-row input[type="range"] {
+            flex: 1;
+            min-width: 160px;
+            accent-color: var(--accent);
+        }
+        .control-row input[type="number"],
+        .control-row select {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 4px;
+            padding: 0.3rem 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+        .control-row .val {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            min-width: 80px;
+            text-align: right;
+        }
+        .btn {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            padding: 0.4rem 0.9rem;
+            background: var(--accent-dim);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .btn:hover { background: rgba(118, 185, 0, 0.2); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn.secondary {
+            background: var(--bg-code);
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+        .result-box {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            margin-top: 0.75rem;
+        }
+        .result-box .line-label { color: var(--text-secondary); }
+        .result-box .line-val   { color: var(--accent); font-weight: 600; }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .metric {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            text-align: center;
+        }
+        .metric .metric-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .metric .metric-value {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-top: 0.2rem;
+        }
+
+        /* Canvas / SVG containers */
+        .canvas-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.25rem 0;
+            overflow-x: auto;
+        }
+        .canvas-wrap canvas,
+        .canvas-wrap svg {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        /* Small inline badge */
+        .badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: middle;
+            margin-left: 0.3rem;
+        }
+        .badge.ok    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+        .badge.warn  { border-color: #ffa657; color: #ffa657; background: rgba(255,166,87,0.08); }
+        .badge.bad   { border-color: #ff7b72; color: #ff7b72; background: rgba(255,123,114,0.08); }
+
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <div class="series-label">Local LLM Hosting Series — Presentation 11</div>
+    <h1>Deploying on <span class="accent">NVIDIA GPUs</span> &mdash; Architectures, Memory, Multi-GPU</h1>
+    <p class="subtitle">A grounded tour of the 2026 NVIDIA stack for LLM serving: which class of card for which model, what the memory type actually does to tok/s, how to gang GPUs together (including heterogeneous pairs), MIG, and the Ollama/vLLM-specific gotchas per architecture.</p>
+
+    <div class="tags">
+        <span class="tag">Ampere</span><span class="tag">Ada</span><span class="tag">Hopper</span>
+        <span class="tag">Blackwell</span><span class="tag">GDDR7</span><span class="tag">HBM3e</span>
+        <span class="tag">NVLink</span><span class="tag">MIG</span>
+        <span class="tag">Heterogeneous</span>
+    </div>
+
+    <div class="pipeline">
+        <span class="pipeline-step">Arch</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Memory</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Capability</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Ollama</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">vLLM</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Multi-GPU</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Hetero</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">MIG</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Ops</span>
+    </div>
+</header>
+
+<section class="slide" id="slide-00">
+    <div class="slide-number">00</div>
+    <h2>Topics We'll Cover</h2>
+    <p>A practical, opinionated guide to picking, pairing, and operating NVIDIA GPUs for local LLM hosting &mdash; with the nuances that bite at 2 AM.</p>
+    <ul class="contents-list">
+        <li><a href="#slide-01">The 2026 NVIDIA Stack &mdash; A Field Guide</a></li>
+        <li><a href="#slide-02">Memory Is the Bill &mdash; GDDR, HBM, LPDDR5x, EGM</a></li>
+        <li><a href="#slide-03">Compute Capability &amp; Feature Matrix</a></li>
+        <li><a href="#slide-04">Ollama on NVIDIA &mdash; Card-by-Card Nuances</a></li>
+        <li><a href="#slide-05">vLLM on NVIDIA &mdash; Card-by-Card Nuances</a></li>
+        <li><a href="#slide-06">Ganging GPUs &mdash; NVLink, NVSwitch, PCIe P2P, IOMMU</a></li>
+        <li><a href="#slide-07">Heterogeneous GPUs &mdash; Can You Actually Mix?</a></li>
+        <li><a href="#slide-08">MIG &mdash; Slicing H100/H200/B200</a></li>
+        <li><a href="#slide-09">Interactive: GPU Capability Picker</a></li>
+        <li><a href="#slide-10">Interactive: Can I Gang These Two?</a></li>
+        <li><a href="#slide-11">Operational Nuances That Burn Hours</a></li>
+        <li><a href="#slide-12">Decision Matrix</a></li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-01">
+    <div class="slide-number">01</div>
+    <h2>The 2026 NVIDIA Stack &mdash; A Field Guide</h2>
+    <p>Five architecture families are relevant to local LLM serving today. Understanding which generation a card belongs to is the single biggest predictor of software behaviour.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>Arch</th><th>CC</th><th>Year</th><th>Examples</th><th>Tensor core native</th><th>LLM notes</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Ampere</strong></td><td>8.0 / 8.6</td><td>2020&ndash;21</td><td>A100, RTX 30xx, A40, A6000</td><td>FP16, BF16, TF32</td><td>No FP8. Workhorse for INT4 serving.</td></tr>
+                <tr><td><strong>Ada Lovelace</strong></td><td>8.9</td><td>2022&ndash;23</td><td>RTX 40xx, L40, L4, L40S</td><td>FP16, BF16 (+FP8 on L40S)</td><td>Consumer king; no NVLink on 4090.</td></tr>
+                <tr><td><strong>Hopper</strong></td><td>9.0</td><td>2023&ndash;24</td><td>H100, H200, GH200</td><td>FP16, BF16, FP8 (E4M3/E5M2)</td><td>First real FP8. Transformer Engine.</td></tr>
+                <tr><td><strong>Blackwell</strong></td><td>10.0 / 12.0</td><td>2025&ndash;26</td><td>B100, B200, RTX 50xx, GB200</td><td>FP16, BF16, FP8, FP4 (MX)</td><td>Native FP4 doubles inference again.</td></tr>
+                <tr><td><strong>Grace-Blackwell</strong></td><td>10.0 / 12.0</td><td>2025&ndash;26</td><td>GB10 (Spark), GB200 NVL72</td><td>same as Blackwell</td><td>Arm64 host, unified memory, C2C link.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Product classes, same arch, very different machine</h3>
+    <div class="diagram-grid cols-3">
+        <div class="diagram-panel accent-border">
+            <h4>Consumer (GeForce)</h4>
+            <p>RTX 30xx / 40xx / 50xx. GDDR6 / 6X / 7. No ECC. No SR-IOV. Driver licence forbids datacenter deployment. On 40-series no NVLink. <em>You're on your own for multi-GPU scaling.</em></p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Prosumer / Workstation</h4>
+            <p>RTX A6000, A6000 Ada, RTX PRO 6000 Blackwell (96 GB). GDDR6/7 ECC, proper driver, sometimes NVLink bridge. Datacenter-licensed. Sweet spot for serious lab work.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Datacenter</h4>
+            <p>A100, H100, H200, B100, B200, L40S, L4. HBM or GDDR6 ECC, SR-IOV, MIG on A100/H100/B200, NVLink 3/4, NVSwitch optional, proper persistence and error recovery. What the frontier APIs actually run on.</p>
+        </div>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Licence warning</div>
+        <p>NVIDIA's GeForce EULA restricts <strong>datacenter deployment</strong> of consumer cards. "Datacenter" is loosely defined but colocation, multi-tenant cloud, and large-scale commercial hosting are clearly out. For home / office / single-tenant internal use it's fine. If you're standing up a commercial service, use L4/L40S/A100/H100/B200 class hardware.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-02">
+    <div class="slide-number">02</div>
+    <h2>Memory Is the Bill &mdash; GDDR, HBM, LPDDR5x, EGM</h2>
+    <p>Decode tok/s is bounded by <strong>memory bandwidth</strong>, not FLOPS. Every token requires reading all weights once. The memory <em>type</em> therefore decides the upper bound on single-stream tok/s more than anything else.</p>
+
+    <div class="canvas-wrap">
+        <svg viewBox="0 0 720 260" width="720" height="260" xmlns="http://www.w3.org/2000/svg">
+            <style>
+                .axis{ stroke: #21262d; }
+                .b1 { fill: rgba(165,214,255,0.35); stroke: #a5d6ff; }
+                .b2 { fill: rgba(118,185,0,0.4); stroke: #76B900; }
+                .b3 { fill: rgba(210,168,255,0.35); stroke: #d2a8ff; }
+                .b4 { fill: rgba(255,166,87,0.35); stroke: #ffa657; }
+                .lbl{ fill: #8b949e; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+                .val{ fill: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; }
+                .h  { fill: #e6edf3; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
+            </style>
+            <text x="10" y="18" class="h">Memory bandwidth per card &mdash; GB/s, higher is better</text>
+            <line x1="170" y1="30" x2="170" y2="240" class="axis"/>
+            <line x1="170" y1="240" x2="700" y2="240" class="axis"/>
+
+            <text x="160" y="50" class="lbl" text-anchor="end">LPDDR5x (Spark)</text>
+            <rect x="170" y="40" width="35" height="16" class="b1"/><text x="215" y="53" class="val">~273 GB/s</text>
+
+            <text x="160" y="72" class="lbl" text-anchor="end">GDDR6 (A6000)</text>
+            <rect x="170" y="62" width="100" height="16" class="b1"/><text x="280" y="75" class="val">~768 GB/s</text>
+
+            <text x="160" y="94" class="lbl" text-anchor="end">GDDR6X (4090)</text>
+            <rect x="170" y="84" width="130" height="16" class="b2"/><text x="310" y="97" class="val">~1008 GB/s</text>
+
+            <text x="160" y="116" class="lbl" text-anchor="end">GDDR7 (5090 / RTX PRO 6000)</text>
+            <rect x="170" y="106" width="240" height="16" class="b2"/><text x="420" y="119" class="val">~1792 GB/s</text>
+
+            <text x="160" y="138" class="lbl" text-anchor="end">HBM2e (A100 80GB)</text>
+            <rect x="170" y="128" width="270" height="16" class="b3"/><text x="450" y="141" class="val">~2000 GB/s</text>
+
+            <text x="160" y="160" class="lbl" text-anchor="end">HBM3 (H100 SXM)</text>
+            <rect x="170" y="150" width="440" height="16" class="b3"/><text x="620" y="163" class="val">~3350 GB/s</text>
+
+            <text x="160" y="182" class="lbl" text-anchor="end">HBM3e (H200 / B100)</text>
+            <rect x="170" y="172" width="520" height="16" class="b4"/><text x="690" y="185" class="val" text-anchor="end">~4800 GB/s</text>
+
+            <text x="160" y="204" class="lbl" text-anchor="end">HBM3e (B200)</text>
+            <rect x="170" y="194" width="530" height="16" class="b4"/><text x="690" y="207" class="val" text-anchor="end">~8000 GB/s</text>
+        </svg>
+    </div>
+
+    <h3>Memory types, intuition</h3>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Type</th><th>Where</th><th>Characteristics</th></tr></thead>
+            <tbody>
+                <tr><td>GDDR6</td><td>A6000, 3090, 4060/70, L4</td><td>Cheap per GB, ~400&ndash;800 GB/s, no ECC on consumer</td></tr>
+                <tr><td>GDDR6X</td><td>3090 Ti, 4080/90</td><td>PAM4 signalling, higher data rate; same capacity tiers</td></tr>
+                <tr><td>GDDR7</td><td>5090, RTX PRO 6000 Blackwell</td><td>PAM3, ~2&times; GDDR6X; up to 96 GB on RTX PRO 6000</td></tr>
+                <tr><td>HBM2e</td><td>A100</td><td>On-package stacks; 40 or 80 GB, ~2 TB/s</td></tr>
+                <tr><td>HBM3</td><td>H100</td><td>80 GB, ~3.4 TB/s</td></tr>
+                <tr><td>HBM3e</td><td>H200, B100, B200, GB200</td><td>96&ndash;192 GB, 4.8&ndash;8 TB/s</td></tr>
+                <tr><td>LPDDR5x (unified)</td><td>GB10 Spark, GH200</td><td>Huge capacity (128 GB+), moderate bandwidth (~0.3&ndash;0.5 TB/s); <strong>coherent with CPU</strong> via NVLink-C2C</td></tr>
+                <tr><td>EGM (Extended GPU Memory)</td><td>GH200, GB200</td><td>GPU sees host LPDDR5x as extended VRAM over the C2C link &mdash; transparent to the kernel</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">The practical consequence</div>
+        <p>Single-stream tok/s on a 70B model is roughly <code>min(bandwidth / weight_bytes, compute_limit)</code>. With 70B FP8 (70 GB weights), an H200 (4.8 TB/s) is theoretically capped at ~68 tok/s per stream; an RTX 4090 running a 40 GB INT4 quant peaks around ~25 tok/s. <strong>If you need raw tok/s on a single stream, spend on bandwidth; if you need concurrency, spend on capacity.</strong></p>
+    </div>
+</section>
+
+<section class="slide" id="slide-03">
+    <div class="slide-number">03</div>
+    <h2>Compute Capability &amp; Feature Matrix</h2>
+    <p>Two cards with the same VRAM can run very different software stacks because their <em>compute capability</em> (CC) determines which tensor-core formats, PTX intrinsics, and CUDA features the kernels can use.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Feature</th><th>Ampere (8.x)</th><th>Ada (8.9)</th><th>Hopper (9.0)</th><th>Blackwell (10.0/12.0)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>TF32 / BF16 / FP16 tensor cores</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                <tr><td>FP8 E4M3 / E5M2 tensor cores</td><td>—</td><td>L40S only</td><td>✓</td><td>✓</td></tr>
+                <tr><td>FP4 (MX) tensor cores</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+                <tr><td>2:4 structured sparsity</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Transformer Engine (auto FP8)</td><td>—</td><td>partial</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Thread-Block Clusters</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Distributed Shared Memory (DSMEM)</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+                <tr><td>TMA (Tensor Memory Accelerator)</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+                <tr><td>MIG (Multi-Instance GPU)</td><td>A100 only</td><td>—</td><td>✓</td><td>B200 only</td></tr>
+                <tr><td>NVLink 3/4/5</td><td>A100 (3)</td><td>no on 4090</td><td>✓ (4)</td><td>✓ (5)</td></tr>
+                <tr><td>Confidential Computing</td><td>—</td><td>—</td><td>✓</td><td>✓</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">The FP8 cliff</div>
+        <p>Every serious 2025&ndash;2026 model family ships FP8 checkpoints because Hopper onwards runs them at full tensor-core speed. On Ampere (A100, 3090, 4090's predecessor) FP8 is <em>emulated</em> &mdash; you pay the memory win but not the compute win. For most decoding that's still a good deal (decoding is bandwidth-bound), but prefill throughput lags Hopper by a lot.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-04">
+    <div class="slide-number">04</div>
+    <h2>Ollama on NVIDIA &mdash; Card-by-Card Nuances</h2>
+    <p>Ollama wraps llama.cpp. The CUDA backend is built with <code>GGML_CUDA=1</code> and uses the CUDA runtime + cuBLAS + llama.cpp's own kernels. Behaviour varies by arch.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Card class</th><th>What actually happens</th><th>Practical notes</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><strong>GTX 10xx / 16xx</strong> (Pascal, Turing)</td>
+                    <td>Works via CUDA backend; no tensor cores &rarr; pure FP32 SMs carry matmul.</td>
+                    <td>GGUF q4 on a 1080 Ti still runs 7B at ~15 tok/s. Fine for demos, not much else.</td>
+                </tr>
+                <tr>
+                    <td><strong>RTX 20xx / 30xx</strong> (Turing / Ampere)</td>
+                    <td>Tensor cores used for FP16/BF16 in matmul. <code>OLLAMA_FLASH_ATTENTION=1</code> switches to flash-attn kernel.</td>
+                    <td>Pin the model on NVMe; 3090's 24 GB runs 13B q5_K_M at 35&ndash;45 tok/s.</td>
+                </tr>
+                <tr>
+                    <td><strong>RTX 40xx</strong> (Ada)</td>
+                    <td>Full BF16 tensor path. <strong>No NVLink on 4090</strong> &mdash; multi-GPU is PCIe P2P only.</td>
+                    <td>Sweet spot for solo Ollama on 7&ndash;32B. q4_K_M quant + FA on.</td>
+                </tr>
+                <tr>
+                    <td><strong>RTX 50xx</strong> (Blackwell consumer)</td>
+                    <td>GDDR7 &mdash; memory bandwidth jumps ~1.8&times; vs 40xx. No FP4 in llama.cpp yet (2026), so you don't get the Blackwell inference speedup via Ollama.</td>
+                    <td>5090's 32 GB VRAM fits 32B q4 or 14B BF16 comfortably.</td>
+                </tr>
+                <tr>
+                    <td><strong>A100 / A40 / A6000</strong></td>
+                    <td>Full BF16, ECC on; Ollama treats it like any CUDA GPU. <strong>A100 MIG instances</strong> show up as separate GPUs &mdash; Ollama will happily bind to one.</td>
+                    <td>Datacenter cards are wasted on single-user Ollama. Still fine for RAG side-cars.</td>
+                </tr>
+                <tr>
+                    <td><strong>H100 / H200</strong></td>
+                    <td>BF16 path; no FP8 in llama.cpp through Ollama (2026). Hopper-specific kernels largely unused.</td>
+                    <td>Throws a lot of silicon away. Use vLLM if you've paid for an H100.</td>
+                </tr>
+                <tr>
+                    <td><strong>DGX Spark (GB10)</strong></td>
+                    <td>Arm64 build; unified memory means model load is extremely fast. FP4 unused.</td>
+                    <td>Good dev target; 128 GB means 70B q4 comfortably.</td>
+                </tr>
+                <tr>
+                    <td><strong>GB200 / B200</strong></td>
+                    <td>Overkill; llama.cpp/Ollama uses almost none of Blackwell's new tensor capabilities.</td>
+                    <td>If you have one, run vLLM or TensorRT-LLM, not Ollama.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Ollama env vars that matter on NVIDIA</h3>
+    <ul>
+        <li><code>CUDA_VISIBLE_DEVICES=0,1</code> &mdash; pin specific GPUs; useful when multi-tenant</li>
+        <li><code>OLLAMA_SCHED_SPREAD=1</code> &mdash; spread a single model across all visible GPUs (experimental layer-splitting)</li>
+        <li><code>OLLAMA_FLASH_ATTENTION=1</code> &mdash; flash-attention kernel (CC 8.0+)</li>
+        <li><code>OLLAMA_KV_CACHE_TYPE=q8_0</code> &mdash; KV-quant, doubles effective context without VRAM cost</li>
+        <li><code>OLLAMA_NUM_PARALLEL=N</code> &mdash; N concurrent sessions against the same loaded model (simulated batching)</li>
+        <li><code>OLLAMA_MAX_LOADED_MODELS=N</code> &mdash; how many models to keep resident; for a multi-GPU box default to number of GPUs</li>
+        <li><code>GGML_CUDA_ENABLE_UNIFIED_MEMORY=1</code> &mdash; let CUDA page weights via unified memory; huge help on unified-memory hosts (Spark) but slower on discrete GPUs</li>
+    </ul>
+
+    <div class="callout">
+        <div class="callout-label">Ollama's multi-GPU honestly</div>
+        <p>Ollama has basic layer-splitting across multiple GPUs (<code>ngl</code> / <code>tensor_split</code>) but it is <strong>not</strong> tensor-parallel in the vLLM sense. It splits layers across cards and pipelines them &mdash; which means slower per-token than a single big card would be, and it does not help concurrent users at all. For real multi-GPU local serving, use vLLM.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-05">
+    <div class="slide-number">05</div>
+    <h2>vLLM on NVIDIA &mdash; Card-by-Card Nuances</h2>
+    <p>vLLM's performance story is much closer to "what the hardware can actually do". It does ship arch-specific kernels and it's picky about them.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Card class</th><th>What vLLM uses</th><th>Practical notes</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td><strong>Turing (RTX 20xx)</strong></td>
+                    <td>FP16 path only. Flash-attn v2 supported; v3 is Hopper-only.</td>
+                    <td>Marginal; 20xx cards lack BF16 tensor cores, cuts throughput.</td>
+                </tr>
+                <tr>
+                    <td><strong>Ampere (A100, 3090, 3090 Ti, A40, A6000)</strong></td>
+                    <td>BF16 native, FP8 <em>emulated</em> (compute no faster than BF16; bandwidth win still applies). Flash-attn v2. PagedAttention works fully.</td>
+                    <td>AWQ / GPTQ INT4 is the best point on this arch. Multi-GPU via NVLink on A100 / A6000, PCIe on 3090.</td>
+                </tr>
+                <tr>
+                    <td><strong>Ada (RTX 40xx, L4, L40, L40S)</strong></td>
+                    <td>BF16 + FP8 on L40S only. No NVLink on 40-series. CUDA graphs fully supported.</td>
+                    <td>Consumer Ada is great for single-GPU vLLM; multi-GPU scaling is rough without NVLink.</td>
+                </tr>
+                <tr>
+                    <td><strong>Hopper (H100 / H200)</strong></td>
+                    <td>Native FP8 tensor cores &rarr; 2&times; throughput vs BF16 on prefill. Flash-attn v3. Thread-block clusters. Transformer Engine via <code>--quantization fp8</code>.</td>
+                    <td>The default production choice in 2026. Use <code>--kv-cache-dtype fp8</code> too.</td>
+                </tr>
+                <tr>
+                    <td><strong>Blackwell (B100 / B200 / GB200)</strong></td>
+                    <td>Adds native FP4 / MX-FP4 &rarr; another 2&times; on compute. vLLM 0.7+ and TensorRT-LLM 0.12+ required.</td>
+                    <td>Highest ceiling; cheapest per token if utilisation is high.</td>
+                </tr>
+                <tr>
+                    <td><strong>DGX Spark (GB10)</strong></td>
+                    <td>Blackwell GPU + 128 GB unified. vLLM arm64 image. FP8/FP4 supported. Bandwidth-bound at LPDDR5x speeds.</td>
+                    <td>Local workstation; see deck 08.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>vLLM flags that behave differently per arch</h3>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Flag</th><th>Ampere</th><th>Ada</th><th>Hopper</th><th>Blackwell</th></tr></thead>
+            <tbody>
+                <tr><td><code>--dtype fp8</code></td><td>emulated; bandwidth win only</td><td>L40S only</td><td>native</td><td>native</td></tr>
+                <tr><td><code>--quantization fp8</code> (TE)</td><td>—</td><td>—</td><td>native</td><td>native</td></tr>
+                <tr><td><code>--quantization awq</code></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                <tr><td><code>--quantization fp4 / mxfp4</code></td><td>—</td><td>—</td><td>—</td><td>native</td></tr>
+                <tr><td><code>--kv-cache-dtype fp8</code></td><td>emulated</td><td>L40S</td><td>native</td><td>native</td></tr>
+                <tr><td><code>--enforce-eager</code></td><td>safe</td><td>safe</td><td>safe</td><td>sometimes needed on early B200 kernels</td></tr>
+                <tr><td><code>--enable-chunked-prefill</code></td><td>✓</td><td>✓</td><td>big win</td><td>big win</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="slide" id="slide-06">
+    <div class="slide-number">06</div>
+    <h2>Ganging GPUs &mdash; NVLink, NVSwitch, PCIe P2P, IOMMU</h2>
+    <p>Deck 05 covered the software axes (TP/PP/DP/EP). Here we cover what the <em>physical</em> link between GPUs buys you and where it goes wrong.</p>
+
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>NVLink &mdash; what it actually is</h4>
+            <p>A high-speed, coherent point-to-point GPU&harr;GPU link. Three variants you'll meet:</p>
+            <ul>
+                <li><strong>NVLink 3</strong>: A100 (600 GB/s), A40/A6000 bridge (112 GB/s two-card).</li>
+                <li><strong>NVLink 4</strong>: H100 (900 GB/s via NVSwitch).</li>
+                <li><strong>NVLink 5</strong>: B200 / GB200 (1.8 TB/s, NVL72 domains up to 72 GPUs).</li>
+            </ul>
+            <p>Used for TP all-reduces and P2P memcpy. <strong>Not present on any 40-series</strong>; NVIDIA removed the bridge. 5090 reportedly also without.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>NVSwitch</h4>
+            <p>A packet-switched fabric so that <em>every</em> GPU in a node talks to every other at full NVLink speed. DGX boxes and HGX baseboards. Turns a group of GPUs into one NVLink domain. TP across 8 H100s works because of NVSwitch.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>PCIe P2P</h4>
+            <p>Fallback on any NVLink-less pair. Per-lane bandwidth is bus-limited: PCIe 4 x16 &asymp; 32 GB/s, PCIe 5 x16 &asymp; 64 GB/s. Works but kills TP scaling.</p>
+            <p>Enablement:</p>
+            <ul>
+                <li>BIOS: enable <strong>Above 4G Decoding</strong> and <strong>Resizable BAR</strong></li>
+                <li>Kernel: <strong>IOMMU passthrough</strong> or off (<code>iommu=pt</code> or <code>intel_iommu=off</code>)</li>
+                <li>Same IOMMU group? Check with <code>lspci -vv | grep -E 'IOMMU|ACS'</code></li>
+                <li>ACS override patch on consumer boards to split groups (risky)</li>
+            </ul>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>InfiniBand / RoCE</h4>
+            <p>Cross-node path. NDR 400 = ~50 GB/s per GPU. GPUDirect RDMA bypasses the host so tensors move GPU&rarr;GPU without a PCIe-to-host-to-PCIe hop. Required for any useful cross-node TP.</p>
+        </div>
+    </div>
+
+    <div class="code-block">
+        <div class="code-header">Diagnose the fabric before you deploy</div>
+        <pre><code>nvidia-smi topo -m           <span class="cm"># matrix: NV#, PIX, PXB, PHB, SYS</span>
+nvidia-smi nvlink -s         <span class="cm"># link state per card</span>
+nvidia-smi -q -d TOPOLOGY | head -60
+
+<span class="cm"># Verify P2P actually works (simpleP2P from cuda-samples, or):</span>
+CUDA_VISIBLE_DEVICES=<span class="num">0</span>,<span class="num">1</span> python -c <span class="str">&quot;import torch;\
+ a=torch.randn(1,device='cuda:0');\
+ b=a.to('cuda:1');\
+ print('p2p ok',b.device)&quot;</span>
+
+<span class="cm"># Raw bandwidth (GPU 0 &rarr; GPU 1, H2H / D2D):</span>
+./bandwidthTest --device=0 --dtod</code></pre>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Nuance: SYS in the matrix</div>
+        <p>If <code>nvidia-smi topo -m</code> shows <code>SYS</code> between your two GPUs, they're separated by a CPU socket. All P2P traffic hops through the CPU's UPI / Infinity Fabric &mdash; catastrophic for TP. Physically move a card, or pin the workload to the GPUs that are both on the same socket with <code>CUDA_VISIBLE_DEVICES</code>.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-07">
+    <div class="slide-number">07</div>
+    <h2>Heterogeneous GPUs &mdash; Can You Actually Mix?</h2>
+    <p>The question everyone asks: <em>"I have a 4090 and a 3090. Can I gang them?"</em> The answer depends entirely on how you're "ganging" them.</p>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>Scenario</th><th>Feasibility</th><th>Why</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Run one model on each card (DP)</strong></td>
+                    <td><span class="badge ok">easy</span></td>
+                    <td>Independent processes, independent CUDA contexts. Completely fine to pair <em>any</em> NVIDIA GPUs this way. Use <code>CUDA_VISIBLE_DEVICES</code>.</td>
+                </tr>
+                <tr>
+                    <td><strong>Ollama <code>OLLAMA_SCHED_SPREAD</code> across mixed cards</strong></td>
+                    <td><span class="badge ok">works</span></td>
+                    <td>llama.cpp's layer split is indifferent to matched cards. Layer placement respects reported VRAM sizes. Slow card sets pace.</td>
+                </tr>
+                <tr>
+                    <td><strong>vLLM Tensor Parallel across mismatched cards</strong></td>
+                    <td><span class="badge bad">no</span></td>
+                    <td>TP requires identical tensor shapes and bit-exact synchronised matmuls every layer. NCCL + Flash-Attention + CUTLASS all assume homogeneous GPUs. vLLM checks and refuses.</td>
+                </tr>
+                <tr>
+                    <td><strong>vLLM Pipeline Parallel across mismatched cards</strong></td>
+                    <td><span class="badge warn">technically possible, painful</span></td>
+                    <td>Stages only exchange hidden states, so <em>in principle</em> stages can be on different GPUs. In practice vLLM/Ray still want matched ranks; you must set <code>--pipeline-parallel-size</code> and assign stages manually. Slowest stage sets throughput; bubble recovery is harder.</td>
+                </tr>
+                <tr>
+                    <td><strong>vLLM DP across mismatched cards behind a router</strong></td>
+                    <td><span class="badge ok">works</span></td>
+                    <td>Each replica is its own vLLM process with its own flags. Different quants per replica are fine; router can even shape traffic towards the faster one.</td>
+                </tr>
+                <tr>
+                    <td><strong>Mix Ampere + Hopper (e.g. 3090 + H100)</strong></td>
+                    <td><span class="badge bad">no TP</span></td>
+                    <td>Different compute capabilities &rarr; different kernel binaries. vLLM will load one arch's wheel, not the other's.</td>
+                </tr>
+                <tr>
+                    <td><strong>Mix 4090 + 4080 (same arch, different VRAM)</strong></td>
+                    <td><span class="badge warn">DP yes, TP no</span></td>
+                    <td>Same CC but different VRAM sizes &rarr; unequal KV pools. TP wants identical shards per GPU; DP doesn't care.</td>
+                </tr>
+                <tr>
+                    <td><strong>A6000 48 GB + A6000 Ada 48 GB</strong></td>
+                    <td><span class="badge warn">no TP</span></td>
+                    <td>Same memory but different arch (Ampere vs Ada). NCCL can still talk but vLLM TP will refuse because the kernels differ.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">Rule of thumb</div>
+        <p><strong>Heterogeneous = DP-only</strong>. If you have mixed GPUs, run one vLLM per GPU (sized appropriately for that card's VRAM), put a load balancer in front, and call it a day. It's simpler, it actually works, and you lose very little vs a theoretical "ideal" unified deployment.</p>
+    </div>
+
+    <h3>A worked mixed-box example</h3>
+    <div class="code-block">
+        <div class="code-header">One 4090 (24 GB) + two 3090s (24 GB each)</div>
+        <pre><code><span class="cm"># Replica A on the 4090 &mdash; Llama-3.1-8B FP16 for fastest TTFT</span>
+CUDA_VISIBLE_DEVICES=<span class="num">0</span> docker run -d --name vllm-fast \
+    --gpus <span class="str">'&quot;device=0&quot;'</span> -p 8001:8000 ...  \
+    --model meta-llama/Meta-Llama-3.1-8B-Instruct --dtype bfloat16
+
+<span class="cm"># Replicas B/C on the 3090s &mdash; larger model, INT4</span>
+CUDA_VISIBLE_DEVICES=<span class="num">1</span> docker run -d --name vllm-big-a \
+    --gpus <span class="str">'&quot;device=1&quot;'</span> -p 8002:8000 ... \
+    --model casperhansen/mistral-small-24b-awq --quantization awq
+CUDA_VISIBLE_DEVICES=<span class="num">2</span> docker run -d --name vllm-big-b \
+    --gpus <span class="str">'&quot;device=2&quot;'</span> -p 8003:8000 ... \
+    --model casperhansen/mistral-small-24b-awq --quantization awq
+
+<span class="cm"># LiteLLM router routes by model name in front of the three ports</span></code></pre>
+    </div>
+</section>
+
+<section class="slide" id="slide-08">
+    <div class="slide-number">08</div>
+    <h2>MIG &mdash; Slicing H100/H200/B200</h2>
+    <p>MIG (Multi-Instance GPU) slices one physical GPU into up to 7 independent GPUs, each with <strong>dedicated</strong> SMs, L2, and memory slices. Unlike vGPU it's hardware-partitioned: no noisy-neighbour contention.</p>
+
+    <div class="canvas-wrap">
+        <svg viewBox="0 0 720 180" width="720" height="180" xmlns="http://www.w3.org/2000/svg">
+            <style>
+                .gpu { fill: #161b22; stroke: #30363d; }
+                .a   { fill: rgba(118,185,0,0.35); stroke: #76B900; }
+                .b   { fill: rgba(210,168,255,0.3); stroke: #d2a8ff; }
+                .c   { fill: rgba(255,166,87,0.3); stroke: #ffa657; }
+                .t   { fill: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+                .h   { fill: #76B900; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
+            </style>
+            <text x="10" y="18" class="h">H100 80 GB MIG profiles &mdash; one possible split</text>
+            <rect x="10" y="30" width="700" height="100" class="gpu"/>
+            <rect x="20" y="40" width="200" height="80" class="a"/><text x="30" y="65" class="t">3g.40gb (3× SMs / 40 GB)</text><text x="30" y="82" class="t">&rarr; one big model per slice</text>
+            <rect x="230" y="40" width="130" height="80" class="b"/><text x="240" y="65" class="t">2g.20gb</text><text x="240" y="82" class="t">(mid-size)</text>
+            <rect x="370" y="40" width="100" height="80" class="c"/><text x="380" y="65" class="t">1g.10gb</text><text x="380" y="82" class="t">(small)</text>
+            <rect x="480" y="40" width="100" height="80" class="c"/><text x="490" y="65" class="t">1g.10gb</text>
+            <rect x="590" y="40" width="110" height="80" class="c"/><text x="600" y="65" class="t">1g.10gb</text>
+            <text x="10" y="160" class="t">Each slice appears as a separate CUDA device with its own UUID.</text>
+        </svg>
+    </div>
+
+    <h3>Why MIG matters for LLM hosting</h3>
+    <ul>
+        <li><strong>Multi-tenant isolation.</strong> Team A's latency never affects Team B's. Separate KV pools, separate memory bandwidth quotas.</li>
+        <li><strong>Model zoo on one card.</strong> Four 1g.10gb slices can each host a different 7B variant at once.</li>
+        <li><strong>Right-sized dev environments.</strong> Give each engineer a 1g slice for experimentation; keep the rest for prod.</li>
+    </ul>
+
+    <div class="code-block">
+        <div class="code-header">Configure MIG on an H100</div>
+        <pre><code>sudo nvidia-smi -mig 1                      <span class="cm"># enable MIG mode</span>
+sudo nvidia-smi mig -cgi 9,14,19,19,19      <span class="cm"># create GIs (profile IDs vary per GPU)</span>
+sudo nvidia-smi mig -cci                    <span class="cm"># create CIs</span>
+nvidia-smi -L                               <span class="cm"># lists each slice with MIG UUID</span>
+
+<span class="cm"># Launch a container bound to one slice</span>
+docker run --gpus <span class="str">'&quot;device=MIG-abcd1234-...&quot;'</span> vllm/vllm-openai:v0.7.0 ...</code></pre>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">MIG limits</div>
+        <p>No NVLink <em>between</em> MIG instances, no P2P across them. So MIG + TP is not a thing. MIG is for many small workloads, not one big sharded one. Also: only A100, H100, H200, B200 support MIG (not A6000, L40S, 4090).</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-09">
+    <div class="slide-number">09</div>
+    <h2>Interactive: GPU Capability Picker</h2>
+    <p>Pick a GPU. See what model sizes and framework features are practical.</p>
+
+    <div class="control-panel">
+        <div class="control-row">
+            <label for="gp-gpu">GPU</label>
+            <select id="gp-gpu">
+                <option value="3060">RTX 3060 12 GB · Ampere · GDDR6 · 360 GB/s</option>
+                <option value="3090">RTX 3090 24 GB · Ampere · GDDR6X · 936 GB/s</option>
+                <option value="4070ti">RTX 4070 Ti 16 GB · Ada · GDDR6X · 672 GB/s</option>
+                <option value="4090" selected>RTX 4090 24 GB · Ada · GDDR6X · 1008 GB/s</option>
+                <option value="5090">RTX 5090 32 GB · Blackwell · GDDR7 · 1792 GB/s</option>
+                <option value="a6000ada">RTX 6000 Ada 48 GB · Ada · GDDR6 ECC · 960 GB/s</option>
+                <option value="pro6000">RTX PRO 6000 Blackwell 96 GB · Blackwell · GDDR7 · 1792 GB/s</option>
+                <option value="l4">L4 24 GB · Ada · GDDR6 · 300 GB/s</option>
+                <option value="l40s">L40S 48 GB · Ada · GDDR6 ECC · 864 GB/s</option>
+                <option value="a100">A100 80 GB · Ampere · HBM2e · 2039 GB/s</option>
+                <option value="h100">H100 80 GB SXM · Hopper · HBM3 · 3350 GB/s</option>
+                <option value="h200">H200 141 GB · Hopper · HBM3e · 4800 GB/s</option>
+                <option value="b200">B200 192 GB · Blackwell · HBM3e · 8000 GB/s</option>
+                <option value="spark">GB10 / DGX Spark 128 GB unified · LPDDR5x · ~273 GB/s</option>
+            </select>
+        </div>
+        <div id="gp-out" class="result-box"></div>
+        <div class="metric-grid">
+            <div class="metric"><div class="metric-label">Arch</div><div class="metric-value" id="g-arch">—</div></div>
+            <div class="metric"><div class="metric-label">VRAM</div><div class="metric-value" id="g-vram">—</div></div>
+            <div class="metric"><div class="metric-label">BW (GB/s)</div><div class="metric-value" id="g-bw">—</div></div>
+            <div class="metric"><div class="metric-label">70B FP8 tok/s (est.)</div><div class="metric-value" id="g-tps">—</div></div>
+        </div>
+    </div>
+
+    <script>
+    (function(){
+        const gpus = {
+            '3060':    { arch:'ampere',    cc:8.6, vram:12, bw:360,  fp8:'emulated', fp4:'no', nvlink:'no',       mig:'no' },
+            '3090':    { arch:'ampere',    cc:8.6, vram:24, bw:936,  fp8:'emulated', fp4:'no', nvlink:'bridge',   mig:'no' },
+            '4070ti':  { arch:'ada',       cc:8.9, vram:16, bw:672,  fp8:'no',       fp4:'no', nvlink:'no',       mig:'no' },
+            '4090':    { arch:'ada',       cc:8.9, vram:24, bw:1008, fp8:'no',       fp4:'no', nvlink:'no',       mig:'no' },
+            '5090':    { arch:'blackwell', cc:10.0,vram:32, bw:1792, fp8:'native',   fp4:'native', nvlink:'no',   mig:'no' },
+            'a6000ada':{ arch:'ada',       cc:8.9, vram:48, bw:960,  fp8:'no',       fp4:'no', nvlink:'bridge',   mig:'no' },
+            'pro6000': { arch:'blackwell', cc:10.0,vram:96, bw:1792, fp8:'native',   fp4:'native', nvlink:'bridge', mig:'no' },
+            'l4':      { arch:'ada',       cc:8.9, vram:24, bw:300,  fp8:'no',       fp4:'no', nvlink:'no',       mig:'no' },
+            'l40s':    { arch:'ada',       cc:8.9, vram:48, bw:864,  fp8:'native',   fp4:'no', nvlink:'no',       mig:'no' },
+            'a100':    { arch:'ampere',    cc:8.0, vram:80, bw:2039, fp8:'emulated', fp4:'no', nvlink:'nvswitch', mig:'yes' },
+            'h100':    { arch:'hopper',    cc:9.0, vram:80, bw:3350, fp8:'native',   fp4:'no', nvlink:'nvswitch', mig:'yes' },
+            'h200':    { arch:'hopper',    cc:9.0, vram:141,bw:4800, fp8:'native',   fp4:'no', nvlink:'nvswitch', mig:'yes' },
+            'b200':    { arch:'blackwell', cc:10.0,vram:192,bw:8000, fp8:'native',   fp4:'native', nvlink:'nvswitch',mig:'yes'},
+            'spark':   { arch:'blackwell', cc:10.0,vram:128,bw:273,  fp8:'native',   fp4:'native', nvlink:'c2c',   mig:'no' }
+        };
+        function rec(){
+            const k = document.getElementById('gp-gpu').value;
+            const g = gpus[k];
+            const notes = [];
+            // FP8 support
+            if (g.fp8 === 'native')      notes.push('<span class="badge ok">FP8 native</span> full tensor-core speedup on prefill and compute-bound paths.');
+            else if (g.fp8 === 'emulated') notes.push('<span class="badge warn">FP8 emulated</span> bandwidth win only; compute same as BF16.');
+            else                         notes.push('<span class="badge bad">no FP8</span> prefer AWQ-INT4 for size wins.');
+            // FP4
+            if (g.fp4 === 'native')      notes.push('<span class="badge ok">FP4 native</span> MX-FP4 via Transformer Engine — 2× over FP8 on supported kernels.');
+            // NVLink
+            if (g.nvlink === 'nvswitch') notes.push('NVSwitch domain &rarr; TP up to 8 scales well.');
+            else if (g.nvlink === 'bridge') notes.push('<span class="badge warn">NVLink bridge only</span> 2-card TP OK; more than 2 needs server-class board.');
+            else if (g.nvlink === 'c2c') notes.push('NVLink-C2C to Grace CPU &rarr; unified memory.');
+            else                         notes.push('<span class="badge warn">no NVLink</span> multi-GPU falls back to PCIe P2P; TP scaling is rough.');
+            // MIG
+            if (g.mig === 'yes')         notes.push('MIG capable &rarr; partition for multi-tenant serving.');
+            // Consumer / licence
+            if (['3060','3090','4070ti','4090','5090'].includes(k))
+                notes.push('<span class="badge warn">consumer licence</span> GeForce EULA restricts datacenter deployment.');
+            // Practical vLLM
+            const vllm = g.fp8 === 'native' ? 'BF16 + FP8 weights + FP8 KV' :
+                         g.fp8 === 'emulated' ? 'BF16 or AWQ-INT4' :
+                         'BF16 or AWQ-INT4 (FP8 off)';
+            // Model fit (rough)
+            const sizesFitFP16 = Math.floor(g.vram / 2);      // weights fit FP16 (B params)
+            const sizesFitINT4 = Math.floor(g.vram / 0.6);    // weights fit INT4 (B params)
+
+            // 70B FP8 estimate
+            const bytesFor70BFP8 = 70;      // GB
+            const tokEst = g.fp8 === 'no' ? null : Math.round(g.bw / bytesFor70BFP8);
+
+            document.getElementById('g-arch').textContent = g.arch;
+            document.getElementById('g-vram').textContent = g.vram + ' GB';
+            document.getElementById('g-bw').textContent   = g.bw;
+            document.getElementById('g-tps').textContent  = tokEst ? (tokEst + ' tok/s') : '— (no FP8)';
+
+            document.getElementById('gp-out').innerHTML =
+                '<div><span class="line-label">suggested vLLM dtype</span> &rarr; <span class="line-val">' + vllm + '</span></div>' +
+                '<div><span class="line-label">fits at FP16</span> &rarr; up to ~' + sizesFitFP16 + ' B params</div>' +
+                '<div><span class="line-label">fits at INT4</span> &rarr; up to ~' + sizesFitINT4 + ' B params</div>' +
+                '<div style="margin-top:0.5rem;color:var(--text-secondary);">' + notes.map(n => '• ' + n).join('<br>') + '</div>';
+        }
+        document.getElementById('gp-gpu').addEventListener('change', rec);
+        rec();
+    })();
+    </script>
+</section>
+
+<section class="slide" id="slide-10">
+    <div class="slide-number">10</div>
+    <h2>Interactive: Can I Gang These Two?</h2>
+    <p>Pick two GPUs and a framework. The planner tells you which ganging modes actually work.</p>
+
+    <div class="control-panel">
+        <div class="control-row">
+            <label for="hh-a">GPU A</label>
+            <select id="hh-a"></select>
+        </div>
+        <div class="control-row">
+            <label for="hh-b">GPU B</label>
+            <select id="hh-b"></select>
+        </div>
+        <div class="control-row">
+            <label for="hh-fw">Framework</label>
+            <select id="hh-fw">
+                <option value="ollama">Ollama</option>
+                <option value="vllm" selected>vLLM</option>
+            </select>
+        </div>
+        <div class="control-row">
+            <label for="hh-link">Physical link</label>
+            <select id="hh-link">
+                <option value="pcie4">PCIe 4.0 x16</option>
+                <option value="pcie5">PCIe 5.0 x16</option>
+                <option value="nvlink">NVLink bridge</option>
+                <option value="nvswitch">NVSwitch</option>
+            </select>
+        </div>
+        <div id="hh-out" class="result-box"></div>
+    </div>
+
+    <script>
+    (function(){
+        const g = {
+            '3060':    { name:'RTX 3060 12 GB',  arch:'ampere',    cc:8.6, vram:12 },
+            '3090':    { name:'RTX 3090 24 GB',  arch:'ampere',    cc:8.6, vram:24 },
+            '4090':    { name:'RTX 4090 24 GB',  arch:'ada',       cc:8.9, vram:24 },
+            '5090':    { name:'RTX 5090 32 GB',  arch:'blackwell', cc:10.0,vram:32 },
+            'a6000a':  { name:'RTX A6000 (Ampere) 48', arch:'ampere', cc:8.6, vram:48 },
+            'a6000e':  { name:'RTX 6000 Ada 48', arch:'ada',       cc:8.9, vram:48 },
+            'pro6000': { name:'RTX PRO 6000 Blackwell 96', arch:'blackwell', cc:10.0, vram:96 },
+            'a100':    { name:'A100 80 GB',      arch:'ampere',    cc:8.0, vram:80 },
+            'h100':    { name:'H100 80 GB',      arch:'hopper',    cc:9.0, vram:80 },
+            'h200':    { name:'H200 141 GB',     arch:'hopper',    cc:9.0, vram:141},
+            'b200':    { name:'B200 192 GB',     arch:'blackwell', cc:10.0,vram:192}
+        };
+        const selA = document.getElementById('hh-a');
+        const selB = document.getElementById('hh-b');
+        Object.entries(g).forEach(([k,v]) => {
+            selA.insertAdjacentHTML('beforeend', '<option value="'+k+'">'+v.name+'</option>');
+            selB.insertAdjacentHTML('beforeend', '<option value="'+k+'">'+v.name+'</option>');
+        });
+        selA.value = '4090';
+        selB.value = '3090';
+
+        function rec(){
+            const a = g[selA.value], b = g[selB.value];
+            const fw = document.getElementById('hh-fw').value;
+            const link = document.getElementById('hh-link').value;
+            const sameArch = a.arch === b.arch;
+            const sameCC   = a.cc === b.cc;
+            const sameVRAM = a.vram === b.vram;
+
+            const rows = [];
+            // DP
+            rows.push({
+                mode: 'Data-parallel (1 replica per GPU, LB in front)',
+                ok: 'ok',
+                note: 'Always works. Route by model name; different quants per GPU if you want.'
+            });
+            // Ollama spread
+            if (fw === 'ollama') {
+                rows.push({
+                    mode: 'Ollama layer-split / OLLAMA_SCHED_SPREAD',
+                    ok: 'warn',
+                    note: 'Works across mixed cards; pipelined not parallel. Slow card sets pace. Not true concurrency.'
+                });
+            }
+            // TP
+            if (fw === 'vllm') {
+                if (!sameCC) rows.push({
+                    mode: 'vLLM --tensor-parallel-size 2',
+                    ok: 'bad',
+                    note: 'Different compute capabilities &rarr; different kernel wheels. vLLM will refuse.'
+                });
+                else if (!sameVRAM) rows.push({
+                    mode: 'vLLM --tensor-parallel-size 2',
+                    ok: 'bad',
+                    note: 'Same arch but unequal VRAM &rarr; unequal shards. TP requires identical per-rank memory.'
+                });
+                else if (link === 'pcie4') rows.push({
+                    mode: 'vLLM --tensor-parallel-size 2',
+                    ok: 'warn',
+                    note: 'Works; but PCIe 4 all-reduces are 3&ndash;10&times; slower than NVLink. Expect TP scaling &lt; 1.3&times;.'
+                });
+                else if (link === 'pcie5') rows.push({
+                    mode: 'vLLM --tensor-parallel-size 2',
+                    ok: 'warn',
+                    note: 'Workable on 2 GPUs. TP scaling ~1.5&ndash;1.7&times;. NVLink still preferred.'
+                });
+                else rows.push({
+                    mode: 'vLLM --tensor-parallel-size 2',
+                    ok: 'ok',
+                    note: 'Matched arch + NVLink &rarr; TP scales near-linearly.'
+                });
+                // PP
+                if (!sameCC) rows.push({
+                    mode: 'vLLM --pipeline-parallel-size 2',
+                    ok: 'bad',
+                    note: 'Ray + vLLM still want matched ranks for cluster init. Don\'t.'
+                });
+                else rows.push({
+                    mode: 'vLLM --pipeline-parallel-size 2',
+                    ok: 'warn',
+                    note: 'OK for depth or cross-node; slowest stage caps throughput.'
+                });
+            }
+            // Summary
+            const ok  = rows.find(r => r.ok === 'ok');
+            const bad = rows.filter(r => r.ok === 'bad');
+
+            const header = !sameArch
+                ? '<span class="badge bad">heterogeneous</span> ' + a.name + ' (' + a.arch + ') + ' + b.name + ' (' + b.arch + ')'
+                : !sameCC
+                    ? '<span class="badge warn">mixed CC</span> same family but different CC'
+                    : sameVRAM
+                        ? '<span class="badge ok">matched pair</span>'
+                        : '<span class="badge warn">same CC, unequal VRAM</span>';
+
+            const body = rows.map(r => {
+                const badge = r.ok === 'ok' ? 'ok' : r.ok === 'warn' ? 'warn' : 'bad';
+                return '<div><span class="line-val">' + r.mode + '</span> <span class="badge ' + badge + '">' + r.ok + '</span><br><span style="color:var(--text-secondary);">• ' + r.note + '</span></div>';
+            }).join('<hr style="border:none;border-top:1px solid var(--border);margin:0.4rem 0;">');
+
+            document.getElementById('hh-out').innerHTML =
+                '<div style="margin-bottom:0.5rem;">' + header + '</div>' + body;
+        }
+        ['hh-a','hh-b','hh-fw','hh-link'].forEach(id => document.getElementById(id).addEventListener('change', rec));
+        rec();
+    })();
+    </script>
+</section>
+
+<section class="slide" id="slide-11">
+    <div class="slide-number">11</div>
+    <h2>Operational Nuances That Burn Hours</h2>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Persistence mode</h4>
+            <p><code>sudo nvidia-smi -pm 1</code>. Without it the driver unloads between processes &mdash; adds ~30 s to every container start. Datacenter cards have it on by default; consumer cards don't.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Resizable BAR (ReBAR) / Above 4G Decoding</h4>
+            <p>BIOS feature; lets the CPU address the GPU's full VRAM as one PCIe aperture. Without it, large tensor transfers are chunked through BAR1 (a ~256 MB window) &mdash; cold loads slow by 2&ndash;5&times;. Always enable on modern boards.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>ECC on / off</h4>
+            <p>Datacenter cards have ECC on by default; it costs ~6% of VRAM. <code>sudo nvidia-smi -e 0</code> reclaims that capacity (reboot required). Do it for inference-only hosts where you don't care about single-bit flips; leave it on for training.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Power limits</h4>
+            <p><code>sudo nvidia-smi -pl 350</code> (watts). A 4090 capped at 350 W loses ~5% throughput but ~15% power. Useful in dense servers. Check <code>nvidia-smi -q -d POWER</code> for envelopes.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>IOMMU groups &amp; ACS</h4>
+            <p>IOMMU groups determine which devices can do P2P. On consumer boards multiple GPUs often end up in the same group (fine) or blocked by PCIe switches. <code>dmesg | grep iommu</code>, <code>lspci -vv | grep ACSCtl</code>. <em>Don't</em> patch ACS on production hardware.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>NUMA pinning</h4>
+            <p>On multi-socket CPUs, GPU-to-CPU traffic hops sockets unless you pin. <code>numactl --cpunodebind=0 --membind=0 vllm serve ...</code> for the GPU on NUMA 0. Worth 5&ndash;10% on prefill throughput.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>WSL2 / Windows</h4>
+            <p>WSL2 works for dev but loses ~10&ndash;15% to the translation layer. No MIG, no SR-IOV. For serving, use bare Linux.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Driver lineage</h4>
+            <p>Match driver to CUDA. Blackwell needs driver &ge; 560; Hopper FP8 works from 525+; some flash-attn 3 kernels require &ge; 560. <em>Pin the driver on serving hosts.</em></p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>CUDA graphs</h4>
+            <p>vLLM captures a graph of the decode step; can save 10&ndash;20% on small batch sizes. Sometimes crashes at load on bleeding-edge CUDA; fall back with <code>--enforce-eager</code>.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Cooling</h4>
+            <p>Not a joke: a 4090 at 85&deg;C throttles. Check <code>nvidia-smi -q -d TEMPERATURE</code>. In a 1U rack a passive-cooled A100/H100 <em>must</em> have front-to-back airflow; blower-style consumer cards may not fit at all.</p>
+        </div>
+    </div>
+</section>
+
+<section class="slide" id="slide-12">
+    <div class="slide-number">12</div>
+    <h2>Decision Matrix &mdash; A Cheat Sheet</h2>
+
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>I want to…</th><th>Buy this</th><th>Framework</th><th>Quant</th></tr></thead>
+            <tbody>
+                <tr><td>Run a 7B locally, no fuss</td><td>Used RTX 3060 12 GB</td><td>Ollama</td><td>q4_K_M</td></tr>
+                <tr><td>Run a 13&ndash;30B locally, fast</td><td>RTX 4090 / 5090 / A6000 Ada</td><td>Ollama or vLLM (DP)</td><td>q5_K_M or AWQ-INT4</td></tr>
+                <tr><td>Serve 10&ndash;50 users on 70B</td><td>H100 / H200 / RTX PRO 6000 Blackwell</td><td>vLLM</td><td>FP8 + FP8 KV</td></tr>
+                <tr><td>Local 70B at home</td><td>DGX Spark 128 GB</td><td>vLLM arm64</td><td>FP8 / AWQ-INT4</td></tr>
+                <tr><td>Serve 400B / MoE on-prem</td><td>2&times; B200 / GB200 NVL72</td><td>vLLM TP=8 or TRT-LLM</td><td>FP8 weights + FP8 KV, MX-FP4 if Blackwell</td></tr>
+                <tr><td>Internal dev GPU pool</td><td>H100 80 GB + MIG</td><td>vLLM per slice</td><td>AWQ-INT4 for small slices, FP8 for big</td></tr>
+                <tr><td>Cheap inference service</td><td>L40S 48 GB &times; N</td><td>vLLM (DP), LB</td><td>FP8</td></tr>
+                <tr><td>Long-context embeddings</td><td>RTX 3090 24 GB</td><td>Ollama or vLLM</td><td>FP16 weights + q8_0 KV</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="callout">
+        <div class="callout-label">The shortest correct answer</div>
+        <p>Single-user &rarr; <strong>Ollama</strong> on whatever consumer GPU has enough VRAM. Multi-user &rarr; <strong>vLLM</strong> on a datacenter or workstation card with HBM or GDDR7 and NVLink if you plan to use more than one. Mixing different cards &rarr; <strong>DP-only</strong>, one replica per GPU, router in front. And measure before you optimise &mdash; the honest bottleneck on local hardware is almost always memory bandwidth.</p>
+    </div>
+</section>
+<!-- ════════════════════════════════════ Footer ════════════════════════════════════ -->
+<footer class="footer">
+    <p>Part of the <a href="https://github.com/BrendanJamesLynskey/LLMs#local-llm-hosting">Local LLM Hosting Series</a></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem;"><a href="https://github.com/BrendanJamesLynskey/LLMs#local-llm-hosting">Back to Series Index</a></p>
+</footer>
+
+<script>
+    // Smooth scroll for TOC links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    // Subtle fade-in on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.slide').forEach(slide => {
+        slide.style.opacity = '0';
+        slide.style.transform = 'translateY(30px)';
+        slide.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(slide);
+    });
+</script>
+
+</body>
+</html>
