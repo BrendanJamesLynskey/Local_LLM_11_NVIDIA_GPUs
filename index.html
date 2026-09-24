@@ -9,15 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0a0a0a;
-            --bg-card: #0d1117;
-            --bg-code: #161b22;
-            --text-primary: #e6edf3;
-            --text-secondary: #8b949e;
-            --accent: #76B900;
-            --accent-dim: #76B90044;
-            --accent-glow: #76B90033;
-            --border: #21262d;
+            --bg-primary: #1c1815;
+            --bg-card: #231e1a;
+            --bg-code: #2b2520;
+            --text-primary: #efe8dc;
+            --text-secondary: #a2978b;
+            --accent: #aabd59;
+            --accent-dim: #aabd5944;
+            --accent-glow: #aabd5933;
+            --border: #3a322b;
             --font-display: 'Space Grotesk', sans-serif;
             --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
             --font-body: 'Inter', sans-serif;
@@ -228,7 +228,7 @@
             font-family: var(--font-mono);
             font-size: 0.75rem;
             color: var(--accent);
-            background: rgba(118, 185, 0, 0.08);
+            background: rgba(170,189,89,0.08);
             padding: 0.4rem 1rem;
             border-bottom: 1px solid var(--border);
         }
@@ -243,18 +243,18 @@
             font-family: var(--font-mono);
             font-size: 0.85rem;
             line-height: 1.6;
-            color: #c9d1d9;
+            color: #dad1c5;
         }
 
         /* Syntax highlighting (manual) */
-        .kw { color: #ff7b72; }
-        .fn { color: #d2a8ff; }
-        .str { color: #a5d6ff; }
-        .cm { color: #8b949e; font-style: italic; }
-        .num { color: #79c0ff; }
-        .type { color: #ffa657; }
-        .dir { color: #ff7b72; }
-        .mac { color: #ffa657; }
+        .kw { color: #de805a; }
+        .fn { color: #d7bbdf; }
+        .str { color: #bcdbd4; }
+        .cm { color: #a2978b; font-style: italic; }
+        .num { color: #97cdc6; }
+        .type { color: #e3b174; }
+        .dir { color: #de805a; }
+        .mac { color: #e3b174; }
 
         /* ── Tables ── */
         .table-wrap {
@@ -292,7 +292,7 @@
         }
 
         tr:nth-child(even) td {
-            background: rgba(13, 17, 23, 0.5);
+            background: rgba(35,30,26,0.5);
         }
 
         /* ── Diagrams ── */
@@ -324,7 +324,7 @@
         .diagram-box.accent {
             border-color: var(--accent);
             color: var(--accent);
-            background: rgba(118, 185, 0, 0.08);
+            background: rgba(170,189,89,0.08);
         }
 
         .diagram-box.dim {
@@ -400,7 +400,7 @@
         .hierarchy-item.accent {
             border-color: var(--accent);
             color: var(--accent);
-            background: rgba(118, 185, 0, 0.08);
+            background: rgba(170,189,89,0.08);
         }
 
         /* Grid diagram */
@@ -673,7 +673,7 @@
             cursor: pointer;
             transition: background 0.15s ease;
         }
-        .btn:hover { background: rgba(118, 185, 0, 0.2); }
+        .btn:hover { background: rgba(170,189,89,0.2); }
         .btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .btn.secondary {
             background: var(--bg-code);
@@ -750,8 +750,8 @@
             margin-left: 0.3rem;
         }
         .badge.ok    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-        .badge.warn  { border-color: #ffa657; color: #ffa657; background: rgba(255,166,87,0.08); }
-        .badge.bad   { border-color: #ff7b72; color: #ff7b72; background: rgba(255,123,114,0.08); }
+        .badge.warn  { border-color: #e3b174; color: #e3b174; background: rgba(227,177,116,0.08); }
+        .badge.bad   { border-color: #de805a; color: #de805a; background: rgba(222,128,90,0.08); }
 
     </style>
 </head>
@@ -860,14 +860,14 @@
     <div class="canvas-wrap">
         <svg viewBox="0 0 720 260" width="720" height="260" xmlns="http://www.w3.org/2000/svg">
             <style>
-                .axis{ stroke: #21262d; }
-                .b1 { fill: rgba(165,214,255,0.35); stroke: #a5d6ff; }
-                .b2 { fill: rgba(118,185,0,0.4); stroke: #76B900; }
-                .b3 { fill: rgba(210,168,255,0.35); stroke: #d2a8ff; }
-                .b4 { fill: rgba(255,166,87,0.35); stroke: #ffa657; }
-                .lbl{ fill: #8b949e; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-                .val{ fill: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; }
-                .h  { fill: #e6edf3; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
+                .axis{ stroke: #3a322b; }
+                .b1 { fill: rgba(188,219,212,0.35); stroke: #bcdbd4; }
+                .b2 { fill: rgba(170,189,89,0.4); stroke: #aabd59; }
+                .b3 { fill: rgba(215,187,223,0.35); stroke: #d7bbdf; }
+                .b4 { fill: rgba(227,177,116,0.35); stroke: #e3b174; }
+                .lbl{ fill: #a2978b; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+                .val{ fill: #efe8dc; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; }
+                .h  { fill: #efe8dc; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
             </style>
             <text x="10" y="18" class="h">Memory bandwidth per card &mdash; GB/s, higher is better</text>
             <line x1="170" y1="30" x2="170" y2="240" class="axis"/>
@@ -1233,12 +1233,12 @@ CUDA_VISIBLE_DEVICES=<span class="num">2</span> docker run -d --name vllm-big-b 
     <div class="canvas-wrap">
         <svg viewBox="0 0 720 180" width="720" height="180" xmlns="http://www.w3.org/2000/svg">
             <style>
-                .gpu { fill: #161b22; stroke: #30363d; }
-                .a   { fill: rgba(118,185,0,0.35); stroke: #76B900; }
-                .b   { fill: rgba(210,168,255,0.3); stroke: #d2a8ff; }
-                .c   { fill: rgba(255,166,87,0.3); stroke: #ffa657; }
-                .t   { fill: #e6edf3; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-                .h   { fill: #76B900; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
+                .gpu { fill: #2b2520; stroke: #463e36; }
+                .a   { fill: rgba(170,189,89,0.35); stroke: #aabd59; }
+                .b   { fill: rgba(215,187,223,0.3); stroke: #d7bbdf; }
+                .c   { fill: rgba(227,177,116,0.3); stroke: #e3b174; }
+                .t   { fill: #efe8dc; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+                .h   { fill: #aabd59; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13px; }
             </style>
             <text x="10" y="18" class="h">H100 80 GB MIG profiles &mdash; one possible split</text>
             <rect x="10" y="30" width="700" height="100" class="gpu"/>
