@@ -1270,7 +1270,7 @@ docker run --gpus <span class="str">'&quot;device=MIG-abcd1234-...&quot;'</span>
 
     <div class="callout">
         <div class="callout-label">MIG limits</div>
-        <p>No NVLink <em>between</em> MIG instances, no P2P across them. So MIG + TP is not a thing. MIG is for many small workloads, not one big sharded one. Also: only A100, H100, H200, B200 support MIG (not A6000, L40S, 4090).</p>
+        <p>No NVLink <em>between</em> MIG instances, no P2P across them. So MIG + TP is not a thing. MIG is for many small workloads, not one big sharded one. Also: only A100, A30, H100, H200, B200 and RTX PRO 6000 Blackwell (up to 4 instances) support MIG (not A6000, L40S, 4090).</p>
     </div>
 </section>
 
@@ -1317,7 +1317,7 @@ docker run --gpus <span class="str">'&quot;device=MIG-abcd1234-...&quot;'</span>
             '4090':    { arch:'ada',       cc:8.9, vram:24, bw:1008, fp8:'native',       fp4:'no', nvlink:'no',       mig:'no' },
             '5090':    { arch:'blackwell', cc:12.0,vram:32, bw:1792, fp8:'native',   fp4:'native', nvlink:'no',   mig:'no' },
             'a6000ada':{ arch:'ada',       cc:8.9, vram:48, bw:960,  fp8:'native',   fp4:'no', nvlink:'no',   mig:'no' },
-            'pro6000': { arch:'blackwell', cc:12.0,vram:96, bw:1792, fp8:'native',   fp4:'native', nvlink:'no', mig:'no' },
+            'pro6000': { arch:'blackwell', cc:12.0,vram:96, bw:1792, fp8:'native',   fp4:'native', nvlink:'no', mig:'yes' },
             'l4':      { arch:'ada',       cc:8.9, vram:24, bw:300,  fp8:'native',       fp4:'no', nvlink:'no',       mig:'no' },
             'l40s':    { arch:'ada',       cc:8.9, vram:48, bw:864,  fp8:'native',   fp4:'no', nvlink:'no',       mig:'no' },
             'a100':    { arch:'ampere',    cc:8.0, vram:80, bw:2039, fp8:'emulated', fp4:'no', nvlink:'nvswitch', mig:'yes' },
