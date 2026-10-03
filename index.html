@@ -1074,8 +1074,8 @@
         <table>
             <thead><tr><th>Flag</th><th>Ampere</th><th>Ada</th><th>Hopper</th><th>Blackwell</th></tr></thead>
             <tbody>
-                <tr><td><code>--dtype fp8</code></td><td>emulated; bandwidth win only</td><td>native</td><td>native</td><td>native</td></tr>
-                <tr><td><code>--quantization fp8</code> (TE)</td><td>—</td><td>—</td><td>native</td><td>native</td></tr>
+                <tr><td>FP8 checkpoint (auto-detected; <code>--dtype</code> has no fp8)</td><td>W8A16 via Marlin; bandwidth win only</td><td>native</td><td>native</td><td>native</td></tr>
+                <tr><td><code>--quantization fp8</code> (TE)</td><td>—</td><td>native</td><td>native</td><td>native</td></tr>
                 <tr><td><code>--quantization awq</code></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
                 <tr><td><code>--quantization fp4 / mxfp4</code></td><td>—</td><td>—</td><td>—</td><td>native</td></tr>
                 <tr><td><code>--kv-cache-dtype fp8</code></td><td>emulated</td><td>native</td><td>native</td><td>native</td></tr>
