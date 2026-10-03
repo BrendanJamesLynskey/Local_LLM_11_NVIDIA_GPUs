@@ -822,10 +822,10 @@
             </thead>
             <tbody>
                 <tr><td><strong>Ampere</strong></td><td>8.0 / 8.6</td><td>2020&ndash;21</td><td>A100, RTX 30xx, A40, A6000</td><td>FP16, BF16, TF32</td><td>No FP8. Workhorse for INT4 serving.</td></tr>
-                <tr><td><strong>Ada Lovelace</strong></td><td>8.9</td><td>2022&ndash;23</td><td>RTX 40xx, L40, L4, L40S</td><td>FP16, BF16 (+FP8 on L40S)</td><td>Consumer king; no NVLink on 4090.</td></tr>
+                <tr><td><strong>Ada Lovelace</strong></td><td>8.9</td><td>2022&ndash;23</td><td>RTX 40xx, L40, L4, L40S</td><td>FP16, BF16, FP8 (all Ada)</td><td>Consumer king; no NVLink on 4090.</td></tr>
                 <tr><td><strong>Hopper</strong></td><td>9.0</td><td>2023&ndash;24</td><td>H100, H200, GH200</td><td>FP16, BF16, FP8 (E4M3/E5M2)</td><td>First real FP8. Transformer Engine.</td></tr>
                 <tr><td><strong>Blackwell</strong></td><td>10.0 / 12.0</td><td>2025&ndash;26</td><td>B100, B200, RTX 50xx, GB200</td><td>FP16, BF16, FP8, FP4 (MX)</td><td>Native FP4 doubles inference again.</td></tr>
-                <tr><td><strong>Grace-Blackwell</strong></td><td>10.0 / 12.0</td><td>2025&ndash;26</td><td>GB10 (Spark), GB200 NVL72</td><td>same as Blackwell</td><td>Arm64 host, unified memory, C2C link.</td></tr>
+                <tr><td><strong>Grace-Blackwell</strong></td><td>10.0 / 12.1</td><td>2025&ndash;26</td><td>GB10 (Spark), GB200 NVL72</td><td>same as Blackwell</td><td>Arm64 host, unified memory, C2C link.</td></tr>
             </tbody>
         </table>
     </div>
@@ -891,7 +891,7 @@
             <text x="160" y="160" class="lbl" text-anchor="end">HBM3 (H100 SXM)</text>
             <rect x="170" y="150" width="440" height="16" class="b3"/><text x="620" y="163" class="val">~3350 GB/s</text>
 
-            <text x="160" y="182" class="lbl" text-anchor="end">HBM3e (H200 / B100)</text>
+            <text x="160" y="182" class="lbl" text-anchor="end">HBM3e (H200)</text>
             <rect x="170" y="172" width="520" height="16" class="b4"/><text x="690" y="185" class="val" text-anchor="end">~4800 GB/s</text>
 
             <text x="160" y="204" class="lbl" text-anchor="end">HBM3e (B200)</text>
@@ -904,10 +904,10 @@
         <table>
             <thead><tr><th>Type</th><th>Where</th><th>Characteristics</th></tr></thead>
             <tbody>
-                <tr><td>GDDR6</td><td>A6000, 3090, 4060/70, L4</td><td>Cheap per GB, ~400&ndash;800 GB/s, no ECC on consumer</td></tr>
-                <tr><td>GDDR6X</td><td>3090 Ti, 4080/90</td><td>PAM4 signalling, higher data rate; same capacity tiers</td></tr>
+                <tr><td>GDDR6</td><td>A6000, 3060, 4060/70, L4</td><td>Cheap per GB, ~400&ndash;800 GB/s, no ECC on consumer</td></tr>
+                <tr><td>GDDR6X</td><td>3090 / 3090 Ti, 4080/90</td><td>PAM4 signalling, higher data rate; same capacity tiers</td></tr>
                 <tr><td>GDDR7</td><td>5090, RTX PRO 6000 Blackwell</td><td>PAM3, ~2&times; GDDR6X; up to 96 GB on RTX PRO 6000</td></tr>
-                <tr><td>HBM2e</td><td>A100</td><td>On-package stacks; 40 or 80 GB, ~2 TB/s</td></tr>
+                <tr><td>HBM2e</td><td>A100</td><td>On-package stacks; 80 GB, ~2 TB/s (the 40 GB A100 is HBM2, ~1.6 TB/s)</td></tr>
                 <tr><td>HBM3</td><td>H100</td><td>80 GB, ~3.4 TB/s</td></tr>
                 <tr><td>HBM3e</td><td>H200, B100, B200, GB200</td><td>96&ndash;192 GB, 4.8&ndash;8 TB/s</td></tr>
                 <tr><td>LPDDR5x (unified)</td><td>GB10 Spark, GH200</td><td>Huge capacity (128 GB+), moderate bandwidth (~0.3&ndash;0.5 TB/s); <strong>coherent with CPU</strong> via NVLink-C2C</td></tr>
@@ -918,7 +918,7 @@
 
     <div class="callout">
         <div class="callout-label">The practical consequence</div>
-        <p>Single-stream tok/s on a 70B model is roughly <code>min(bandwidth / weight_bytes, compute_limit)</code>. With 70B FP8 (70 GB weights), an H200 (4.8 TB/s) is theoretically capped at ~68 tok/s per stream; an RTX 4090 running a 40 GB INT4 quant peaks around ~25 tok/s. <strong>If you need raw tok/s on a single stream, spend on bandwidth; if you need concurrency, spend on capacity.</strong></p>
+        <p>Single-stream tok/s on a 70B model is roughly <code>min(bandwidth / weight_bytes, compute_limit)</code>. With 70B FP8 (70 GB weights), an H200 (4.8 TB/s) is theoretically capped at ~68 tok/s per stream; a pair of RTX 4090s layer-splitting a 40 GB INT4 quant (it doesn't fit one 24 GB card) peaks around ~25 tok/s. <strong>If you need raw tok/s on a single stream, spend on bandwidth; if you need concurrency, spend on capacity.</strong></p>
     </div>
 </section>
 
@@ -936,7 +936,7 @@
             </thead>
             <tbody>
                 <tr><td>TF32 / BF16 / FP16 tensor cores</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
-                <tr><td>FP8 E4M3 / E5M2 tensor cores</td><td>—</td><td>L40S only</td><td>✓</td><td>✓</td></tr>
+                <tr><td>FP8 E4M3 / E5M2 tensor cores</td><td>—</td><td>✓</td><td>✓</td><td>✓</td></tr>
                 <tr><td>FP4 (MX) tensor cores</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
                 <tr><td>2:4 structured sparsity</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
                 <tr><td>Transformer Engine (auto FP8)</td><td>—</td><td>partial</td><td>✓</td><td>✓</td></tr>
@@ -1047,7 +1047,7 @@
                 </tr>
                 <tr>
                     <td><strong>Ada (RTX 40xx, L4, L40, L40S)</strong></td>
-                    <td>BF16 + FP8 on L40S only. No NVLink on 40-series. CUDA graphs fully supported.</td>
+                    <td>BF16 + FP8 (all Ada, CC 8.9). No NVLink on 40-series. CUDA graphs fully supported.</td>
                     <td>Consumer Ada is great for single-GPU vLLM; multi-GPU scaling is rough without NVLink.</td>
                 </tr>
                 <tr>
@@ -1074,11 +1074,11 @@
         <table>
             <thead><tr><th>Flag</th><th>Ampere</th><th>Ada</th><th>Hopper</th><th>Blackwell</th></tr></thead>
             <tbody>
-                <tr><td><code>--dtype fp8</code></td><td>emulated; bandwidth win only</td><td>L40S only</td><td>native</td><td>native</td></tr>
+                <tr><td><code>--dtype fp8</code></td><td>emulated; bandwidth win only</td><td>native</td><td>native</td><td>native</td></tr>
                 <tr><td><code>--quantization fp8</code> (TE)</td><td>—</td><td>—</td><td>native</td><td>native</td></tr>
                 <tr><td><code>--quantization awq</code></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
                 <tr><td><code>--quantization fp4 / mxfp4</code></td><td>—</td><td>—</td><td>—</td><td>native</td></tr>
-                <tr><td><code>--kv-cache-dtype fp8</code></td><td>emulated</td><td>L40S</td><td>native</td><td>native</td></tr>
+                <tr><td><code>--kv-cache-dtype fp8</code></td><td>emulated</td><td>native</td><td>native</td><td>native</td></tr>
                 <tr><td><code>--enforce-eager</code></td><td>safe</td><td>safe</td><td>safe</td><td>sometimes needed on early B200 kernels</td></tr>
                 <tr><td><code>--enable-chunked-prefill</code></td><td>✓</td><td>✓</td><td>big win</td><td>big win</td></tr>
             </tbody>
@@ -1246,7 +1246,6 @@ CUDA_VISIBLE_DEVICES=<span class="num">2</span> docker run -d --name vllm-big-b 
             <rect x="230" y="40" width="130" height="80" class="b"/><text x="240" y="65" class="t">2g.20gb</text><text x="240" y="82" class="t">(mid-size)</text>
             <rect x="370" y="40" width="100" height="80" class="c"/><text x="380" y="65" class="t">1g.10gb</text><text x="380" y="82" class="t">(small)</text>
             <rect x="480" y="40" width="100" height="80" class="c"/><text x="490" y="65" class="t">1g.10gb</text>
-            <rect x="590" y="40" width="110" height="80" class="c"/><text x="600" y="65" class="t">1g.10gb</text>
             <text x="10" y="160" class="t">Each slice appears as a separate CUDA device with its own UUID.</text>
         </svg>
     </div>
@@ -1261,7 +1260,7 @@ CUDA_VISIBLE_DEVICES=<span class="num">2</span> docker run -d --name vllm-big-b 
     <div class="code-block">
         <div class="code-header">Configure MIG on an H100</div>
         <pre><code>sudo nvidia-smi -mig 1                      <span class="cm"># enable MIG mode</span>
-sudo nvidia-smi mig -cgi 9,14,19,19,19      <span class="cm"># create GIs (profile IDs vary per GPU)</span>
+sudo nvidia-smi mig -cgi 9,14,19,19      <span class="cm"># create GIs (profile IDs vary per GPU)</span>
 sudo nvidia-smi mig -cci                    <span class="cm"># create CIs</span>
 nvidia-smi -L                               <span class="cm"># lists each slice with MIG UUID</span>
 
@@ -1286,7 +1285,7 @@ docker run --gpus <span class="str">'&quot;device=MIG-abcd1234-...&quot;'</span>
             <select id="gp-gpu">
                 <option value="3060">RTX 3060 12 GB · Ampere · GDDR6 · 360 GB/s</option>
                 <option value="3090">RTX 3090 24 GB · Ampere · GDDR6X · 936 GB/s</option>
-                <option value="4070ti">RTX 4070 Ti 16 GB · Ada · GDDR6X · 672 GB/s</option>
+                <option value="4070ti">RTX 4070 Ti Super 16 GB · Ada · GDDR6X · 672 GB/s</option>
                 <option value="4090" selected>RTX 4090 24 GB · Ada · GDDR6X · 1008 GB/s</option>
                 <option value="5090">RTX 5090 32 GB · Blackwell · GDDR7 · 1792 GB/s</option>
                 <option value="a6000ada">RTX 6000 Ada 48 GB · Ada · GDDR6 ECC · 960 GB/s</option>
@@ -1314,18 +1313,18 @@ docker run --gpus <span class="str">'&quot;device=MIG-abcd1234-...&quot;'</span>
         const gpus = {
             '3060':    { arch:'ampere',    cc:8.6, vram:12, bw:360,  fp8:'emulated', fp4:'no', nvlink:'no',       mig:'no' },
             '3090':    { arch:'ampere',    cc:8.6, vram:24, bw:936,  fp8:'emulated', fp4:'no', nvlink:'bridge',   mig:'no' },
-            '4070ti':  { arch:'ada',       cc:8.9, vram:16, bw:672,  fp8:'no',       fp4:'no', nvlink:'no',       mig:'no' },
-            '4090':    { arch:'ada',       cc:8.9, vram:24, bw:1008, fp8:'no',       fp4:'no', nvlink:'no',       mig:'no' },
-            '5090':    { arch:'blackwell', cc:10.0,vram:32, bw:1792, fp8:'native',   fp4:'native', nvlink:'no',   mig:'no' },
-            'a6000ada':{ arch:'ada',       cc:8.9, vram:48, bw:960,  fp8:'no',       fp4:'no', nvlink:'bridge',   mig:'no' },
-            'pro6000': { arch:'blackwell', cc:10.0,vram:96, bw:1792, fp8:'native',   fp4:'native', nvlink:'bridge', mig:'no' },
-            'l4':      { arch:'ada',       cc:8.9, vram:24, bw:300,  fp8:'no',       fp4:'no', nvlink:'no',       mig:'no' },
+            '4070ti':  { arch:'ada',       cc:8.9, vram:16, bw:672,  fp8:'native',       fp4:'no', nvlink:'no',       mig:'no' },
+            '4090':    { arch:'ada',       cc:8.9, vram:24, bw:1008, fp8:'native',       fp4:'no', nvlink:'no',       mig:'no' },
+            '5090':    { arch:'blackwell', cc:12.0,vram:32, bw:1792, fp8:'native',   fp4:'native', nvlink:'no',   mig:'no' },
+            'a6000ada':{ arch:'ada',       cc:8.9, vram:48, bw:960,  fp8:'native',   fp4:'no', nvlink:'no',   mig:'no' },
+            'pro6000': { arch:'blackwell', cc:12.0,vram:96, bw:1792, fp8:'native',   fp4:'native', nvlink:'no', mig:'no' },
+            'l4':      { arch:'ada',       cc:8.9, vram:24, bw:300,  fp8:'native',       fp4:'no', nvlink:'no',       mig:'no' },
             'l40s':    { arch:'ada',       cc:8.9, vram:48, bw:864,  fp8:'native',   fp4:'no', nvlink:'no',       mig:'no' },
             'a100':    { arch:'ampere',    cc:8.0, vram:80, bw:2039, fp8:'emulated', fp4:'no', nvlink:'nvswitch', mig:'yes' },
             'h100':    { arch:'hopper',    cc:9.0, vram:80, bw:3350, fp8:'native',   fp4:'no', nvlink:'nvswitch', mig:'yes' },
             'h200':    { arch:'hopper',    cc:9.0, vram:141,bw:4800, fp8:'native',   fp4:'no', nvlink:'nvswitch', mig:'yes' },
             'b200':    { arch:'blackwell', cc:10.0,vram:192,bw:8000, fp8:'native',   fp4:'native', nvlink:'nvswitch',mig:'yes'},
-            'spark':   { arch:'blackwell', cc:10.0,vram:128,bw:273,  fp8:'native',   fp4:'native', nvlink:'c2c',   mig:'no' }
+            'spark':   { arch:'blackwell', cc:12.1,vram:128,bw:273,  fp8:'native',   fp4:'native', nvlink:'c2c',   mig:'no' }
         };
         function rec(){
             const k = document.getElementById('gp-gpu').value;
@@ -1415,10 +1414,10 @@ docker run --gpus <span class="str">'&quot;device=MIG-abcd1234-...&quot;'</span>
             '3060':    { name:'RTX 3060 12 GB',  arch:'ampere',    cc:8.6, vram:12 },
             '3090':    { name:'RTX 3090 24 GB',  arch:'ampere',    cc:8.6, vram:24 },
             '4090':    { name:'RTX 4090 24 GB',  arch:'ada',       cc:8.9, vram:24 },
-            '5090':    { name:'RTX 5090 32 GB',  arch:'blackwell', cc:10.0,vram:32 },
+            '5090':    { name:'RTX 5090 32 GB',  arch:'blackwell', cc:12.0,vram:32 },
             'a6000a':  { name:'RTX A6000 (Ampere) 48', arch:'ampere', cc:8.6, vram:48 },
             'a6000e':  { name:'RTX 6000 Ada 48', arch:'ada',       cc:8.9, vram:48 },
-            'pro6000': { name:'RTX PRO 6000 Blackwell 96', arch:'blackwell', cc:10.0, vram:96 },
+            'pro6000': { name:'RTX PRO 6000 Blackwell 96', arch:'blackwell', cc:12.0, vram:96 },
             'a100':    { name:'A100 80 GB',      arch:'ampere',    cc:8.0, vram:80 },
             'h100':    { name:'H100 80 GB',      arch:'hopper',    cc:9.0, vram:80 },
             'h200':    { name:'H200 141 GB',     arch:'hopper',    cc:9.0, vram:141},
@@ -1555,7 +1554,7 @@ docker run --gpus <span class="str">'&quot;device=MIG-abcd1234-...&quot;'</span>
         </div>
         <div class="diagram-panel accent-border">
             <h4>Driver lineage</h4>
-            <p>Match driver to CUDA. Blackwell needs driver &ge; 560; Hopper FP8 works from 525+; some flash-attn 3 kernels require &ge; 560. <em>Pin the driver on serving hosts.</em></p>
+            <p>Match driver to CUDA. Blackwell needs driver &ge; 570 (CUDA 12.8); Hopper FP8 works from 525+; some flash-attn 3 kernels require &ge; 560. <em>Pin the driver on serving hosts.</em></p>
         </div>
         <div class="diagram-panel accent-border">
             <h4>CUDA graphs</h4>
@@ -1580,7 +1579,7 @@ docker run --gpus <span class="str">'&quot;device=MIG-abcd1234-...&quot;'</span>
                 <tr><td>Run a 13&ndash;30B locally, fast</td><td>RTX 4090 / 5090 / A6000 Ada</td><td>Ollama or vLLM (DP)</td><td>q5_K_M or AWQ-INT4</td></tr>
                 <tr><td>Serve 10&ndash;50 users on 70B</td><td>H100 / H200 / RTX PRO 6000 Blackwell</td><td>vLLM</td><td>FP8 + FP8 KV</td></tr>
                 <tr><td>Local 70B at home</td><td>DGX Spark 128 GB</td><td>vLLM arm64</td><td>FP8 / AWQ-INT4</td></tr>
-                <tr><td>Serve 400B / MoE on-prem</td><td>2&times; B200 / GB200 NVL72</td><td>vLLM TP=8 or TRT-LLM</td><td>FP8 weights + FP8 KV, MX-FP4 if Blackwell</td></tr>
+                <tr><td>Serve 400B / MoE on-prem</td><td>8&times; B200 (HGX) / GB200 NVL72</td><td>vLLM TP=8 or TRT-LLM</td><td>FP8 weights + FP8 KV, MX-FP4 if Blackwell</td></tr>
                 <tr><td>Internal dev GPU pool</td><td>H100 80 GB + MIG</td><td>vLLM per slice</td><td>AWQ-INT4 for small slices, FP8 for big</td></tr>
                 <tr><td>Cheap inference service</td><td>L40S 48 GB &times; N</td><td>vLLM (DP), LB</td><td>FP8</td></tr>
                 <tr><td>Long-context embeddings</td><td>RTX 3090 24 GB</td><td>Ollama or vLLM</td><td>FP16 weights + q8_0 KV</td></tr>
